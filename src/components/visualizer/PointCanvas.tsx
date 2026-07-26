@@ -3,18 +3,24 @@ import type { Point } from "@/types/point";
 import { clientPointToSvgPoint, createPointId } from "@/visualizer/svgCoordinates";
 import { toSvgPointsAttribute } from "@/visualizer/svgPath";
 
-const VIEWBOX = {
+export const SVG_VIEWBOX = {
   width: 1000,
   height: 600,
 };
 
 type PointCanvasProps = {
   hullPoints?: Point[];
+  onPointRemove?: (pointId: string) => void;
   points: Point[];
   onPointsChange: (points: Point[]) => void;
 };
 
-export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCanvasProps) {
+export function PointCanvas({
+  hullPoints = [],
+  onPointRemove,
+  points,
+  onPointsChange,
+}: PointCanvasProps) {
   const hullPointIds = new Set(hullPoints.map((point) => point.id));
 
   function handleCanvasClick(event: MouseEvent<SVGSVGElement>) {
@@ -22,7 +28,7 @@ export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCa
     const coordinate = clientPointToSvgPoint(
       { clientX: event.clientX, clientY: event.clientY },
       rect,
-      VIEWBOX,
+      SVG_VIEWBOX,
     );
 
     onPointsChange([
@@ -41,7 +47,7 @@ export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCa
         className="block aspect-[16/10] w-full cursor-crosshair touch-none"
         onClick={handleCanvasClick}
         role="img"
-        viewBox={`0 0 ${VIEWBOX.width} ${VIEWBOX.height}`}
+        viewBox={`0 0 ${SVG_VIEWBOX.width} ${SVG_VIEWBOX.height}`}
       >
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -54,8 +60,8 @@ export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCa
           </pattern>
         </defs>
 
-        <rect width={VIEWBOX.width} height={VIEWBOX.height} fill="rgb(249 250 251)" />
-        <rect width={VIEWBOX.width} height={VIEWBOX.height} fill="url(#grid)" />
+        <rect width={SVG_VIEWBOX.width} height={SVG_VIEWBOX.height} fill="rgb(249 250 251)" />
+        <rect width={SVG_VIEWBOX.width} height={SVG_VIEWBOX.height} fill="url(#grid)" />
 
         {hullPoints.length >= 3 ? (
           <polygon
@@ -68,7 +74,18 @@ export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCa
         ) : null}
 
         {points.map((point, index) => (
-          <g key={point.id}>
+          <g
+            className={onPointRemove ? "cursor-pointer" : undefined}
+            key={point.id}
+            onClick={(event) => {
+              if (!onPointRemove) {
+                return;
+              }
+
+              event.stopPropagation();
+              onPointRemove(point.id);
+            }}
+          >
             <circle
               cx={point.x}
               cy={point.y}
@@ -87,6 +104,7 @@ export function PointCanvas({ hullPoints = [], points, onPointsChange }: PointCa
             >
               {index + 1}
             </text>
+            <title>Click to remove point {index + 1}</title>
           </g>
         ))}
       </svg>

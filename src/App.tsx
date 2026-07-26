@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { Play, RotateCcw, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +22,68 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
-import { PointCanvas } from "@/components/visualizer/PointCanvas";
+import { PointCanvas, SVG_VIEWBOX } from "@/components/visualizer/PointCanvas";
 import type { Point } from "@/types/point";
+import { generateRandomPoints } from "@/utils/datasetGenerator";
+import { parseDatasetText } from "@/utils/fileParser";
+import { removePointById } from "@/utils/pointList";
 
 function App() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
+  const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
+
+  function handleGeneratePoints() {
+    const count = Number(pointCount);
+    const generatedPoints = generateRandomPoints({
+      count: Number.isFinite(count) ? count : 0,
+      viewport: SVG_VIEWBOX,
+    });
+
+    setPoints(generatedPoints);
+    setDatasetNotice(`Generated ${generatedPoints.length} random points.`);
+    toast.success(`Generated ${generatedPoints.length} points`);
+  }
+
+  async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const result = parseDatasetText(text);
+      setPoints(result.points);
+
+      const rejectedMessage =
+        result.rejectedRows.length > 0
+          ? ` ${result.rejectedRows.length} invalid rows were skipped.`
+          : "";
+
+      setDatasetNotice(`Imported ${result.points.length} points from ${file.name}.${rejectedMessage}`);
+      toast.success(`Imported ${result.points.length} points`);
+    } catch {
+      setDatasetNotice(`Could not read ${file.name}.`);
+      toast.error("Could not import dataset");
+    }
+  }
+
+  function handleResetPoints() {
+    setPoints([]);
+    setDatasetNotice("Dataset cleared. Click the workspace, generate, or import points.");
+  }
+
+  function handleRemovePoint(pointId: string) {
+    setPoints((currentPoints) => {
+      const nextPoints = removePointById(currentPoints, pointId);
+      setDatasetNotice(`Manual dataset has ${nextPoints.length} points.`);
+      return nextPoints;
+    });
+  }
 
   return (
     <main className="min-h-dvh bg-background text-foreground">
@@ -34,10 +92,10 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 3</Badge>
+              <Badge variant="secondary">Milestone 4</Badge>
             </div>
             <CardDescription>
-              Click the SVG workspace to add points.
+              Add points manually, generate random data, or import a file.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -45,7 +103,13 @@ function App() {
               <label className="text-sm font-medium" htmlFor="point-count">
                 Point count
               </label>
-              <Input id="point-count" min="3" type="number" defaultValue="30" />
+              <Input
+                id="point-count"
+                min="0"
+                onChange={(event) => setPointCount(event.target.value)}
+                type="number"
+                value={pointCount}
+              />
             </div>
 
             <div className="space-y-2">
@@ -64,18 +128,25 @@ function App() {
             <Separator />
 
             <div className="flex flex-wrap gap-2">
-              <Button>
+              <Button onClick={handleGeneratePoints}>
                 <Play className="size-4" />
                 Generate
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="size-4" />
                 Import
               </Button>
-              <Button variant="ghost" onClick={() => setPoints([])}>
+              <Button variant="ghost" onClick={handleResetPoints}>
                 <RotateCcw className="size-4" />
                 Reset
               </Button>
+              <input
+                ref={fileInputRef}
+                accept=".csv,.txt,text/csv,text/plain"
+                className="hidden"
+                onChange={handleImportFile}
+                type="file"
+              />
             </div>
 
             <div className="space-y-3">
@@ -102,11 +173,18 @@ function App() {
                   <Badge variant="outline">{points.length} points</Badge>
                 </div>
                 <CardDescription>
-                  Add points manually by clicking anywhere in the workspace.
+                  {datasetNotice}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PointCanvas points={points} onPointsChange={setPoints} />
+                <PointCanvas
+                  points={points}
+                  onPointRemove={handleRemovePoint}
+                  onPointsChange={(nextPoints) => {
+                    setPoints(nextPoints);
+                    setDatasetNotice(`Manual dataset has ${nextPoints.length} points.`);
+                  }}
+                />
               </CardContent>
             </Card>
           </TabsContent>
