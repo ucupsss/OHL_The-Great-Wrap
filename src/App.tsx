@@ -95,7 +95,7 @@ function App() {
               <Badge variant="secondary">Milestone 4</Badge>
             </div>
             <CardDescription>
-              Add points manually, generate random data, or import a file.
+              Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
