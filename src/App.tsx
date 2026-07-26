@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Play, RotateCcw, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,12 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
+import { PointCanvas } from "@/components/visualizer/PointCanvas";
+import type { Point } from "@/types/point";
 
 function App() {
+  const [points, setPoints] = useState<Point[]>([]);
+
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto grid min-h-dvh max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[320px_1fr]">
@@ -29,10 +34,10 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 1</Badge>
+              <Badge variant="secondary">Milestone 3</Badge>
             </div>
             <CardDescription>
-              UI foundation for the Convex Hull Visualizer.
+              Click the SVG workspace to add points.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -67,7 +72,7 @@ function App() {
                 <Upload className="size-4" />
                 Import
               </Button>
-              <Button variant="ghost">
+              <Button variant="ghost" onClick={() => setPoints([])}>
                 <RotateCcw className="size-4" />
                 Reset
               </Button>
@@ -92,15 +97,16 @@ function App() {
           <TabsContent value="visualizer">
             <Card>
               <CardHeader>
-                <CardTitle>Convex Hull Canvas</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle>Convex Hull Canvas</CardTitle>
+                  <Badge variant="outline">{points.length} points</Badge>
+                </div>
                 <CardDescription>
-                  The SVG visualizer will be implemented in the next milestone.
+                  Add points manually by clicking anywhere in the workspace.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid aspect-[16/10] place-items-center rounded-md border border-dashed bg-muted/30 text-sm text-muted-foreground">
-                  SVG workspace ready
-                </div>
+                <PointCanvas points={points} onPointsChange={setPoints} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -132,4 +138,3 @@ function App() {
 }
 
 export default App;
-
