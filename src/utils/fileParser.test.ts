@@ -10,6 +10,7 @@ describe("file parser", () => {
         { id: "p-1", x: 10, y: 20 },
         { id: "p-2", x: 30, y: 40 },
       ],
+      duplicateRows: [],
       rejectedRows: [],
     });
   });
@@ -23,13 +24,14 @@ describe("file parser", () => {
     ]);
   });
 
-  it("deduplicates coordinates and reports invalid rows", () => {
+  it("deduplicates coordinates and reports invalid and duplicate rows", () => {
     const result = parseDatasetText("10,20\nbad,row\n10,20\n50,60,extra");
 
     expect(result.points).toEqual([
       { id: "p-1", x: 10, y: 20 },
       { id: "p-2", x: 50, y: 60 },
     ]);
+    expect(result.duplicateRows).toEqual([3]);
     expect(result.rejectedRows).toEqual([2]);
   });
 });

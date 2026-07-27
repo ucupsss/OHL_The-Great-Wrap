@@ -31,6 +31,7 @@ import {
 } from "@/algorithms/convexHull";
 import type { Point } from "@/types/point";
 import { generateRandomPoints } from "@/utils/datasetGenerator";
+import { analyzeEdgeCases } from "@/utils/edgeCases";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
 
@@ -41,6 +42,7 @@ function App() {
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
   const activeAlgorithmLabel = getAlgorithmLabel(algorithm);
+  const edgeCaseStatus = useMemo(() => analyzeEdgeCases(points), [points]);
   const hullResult = useMemo(
     () => calculateConvexHull(points, algorithm),
     [algorithm, points],
@@ -75,8 +77,14 @@ function App() {
         result.rejectedRows.length > 0
           ? ` ${result.rejectedRows.length} invalid rows were skipped.`
           : "";
+      const duplicateMessage =
+        result.duplicateRows.length > 0
+          ? ` ${result.duplicateRows.length} duplicate rows were skipped.`
+          : "";
 
-      setDatasetNotice(`Imported ${result.points.length} points from ${file.name}.${rejectedMessage}`);
+      setDatasetNotice(
+        `Imported ${result.points.length} points from ${file.name}.${rejectedMessage}${duplicateMessage}`,
+      );
       toast.success(`Imported ${result.points.length} points`);
     } catch {
       setDatasetNotice(`Could not read ${file.name}.`);
@@ -145,6 +153,18 @@ function App() {
 
             <Separator />
 
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">Edge case status</span>
+                <Badge
+                  variant={edgeCaseStatus.severity === "success" ? "default" : "secondary"}
+                >
+                  {edgeCaseStatus.label}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{edgeCaseStatus.message}</p>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleGeneratePoints}>
                 <Play className="size-4" />
@@ -191,9 +211,17 @@ function App() {
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">{points.length} points</Badge>
                     <Badge variant="secondary">{hullResult.hull.length} hull points</Badge>
+                    <Badge
+                      variant={edgeCaseStatus.severity === "success" ? "default" : "secondary"}
+                    >
+                      {edgeCaseStatus.label}
+                    </Badge>
                     <Badge>{activeAlgorithmLabel}</Badge>
                   </div>
                 </div>
+                <CardDescription>
+                  {datasetNotice} {activeAlgorithmLabel} is drawing the current hull automatically.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <PointCanvas

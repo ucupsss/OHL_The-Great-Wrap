@@ -1,8 +1,8 @@
-import { deduplicatePoints } from "@/algorithms/geometry";
 import type { Point } from "@/types/point";
 import { createPointId } from "@/visualizer/svgCoordinates";
 
 export type ParseDatasetResult = {
+  duplicateRows: number[];
   points: Point[];
   rejectedRows: number[];
 };
@@ -14,7 +14,9 @@ type ParsedRow = {
 
 export function parseDatasetText(text: string): ParseDatasetResult {
   const parsedRows: ParsedRow[] = [];
+  const duplicateRows: number[] = [];
   const rejectedRows: number[] = [];
+  const seenCoordinates = new Set<string>();
   const lines = text.split(/\r?\n/);
 
   lines.forEach((line, index) => {
@@ -42,6 +44,14 @@ export function parseDatasetText(text: string): ParseDatasetResult {
       return;
     }
 
+    const coordinateKey = `${x},${y}`;
+
+    if (seenCoordinates.has(coordinateKey)) {
+      duplicateRows.push(index + 1);
+      return;
+    }
+
+    seenCoordinates.add(coordinateKey);
     parsedRows.push({ x, y });
   });
 
@@ -51,13 +61,9 @@ export function parseDatasetText(text: string): ParseDatasetResult {
     y: row.y,
   }));
 
-  const uniquePoints = deduplicatePoints(points).map((point, index) => ({
-    ...point,
-    id: createPointId(index),
-  }));
-
   return {
-    points: uniquePoints,
+    duplicateRows,
+    points,
     rejectedRows,
   };
 }
