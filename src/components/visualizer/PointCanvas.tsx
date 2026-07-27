@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import type { Point } from "@/types/point";
+import { getPointVisualRole } from "@/visualizer/pointVisualState";
 import { clientPointToSvgPoint, createPointId } from "@/visualizer/svgCoordinates";
 import { toSvgPointsAttribute } from "@/visualizer/svgPath";
 
@@ -9,21 +10,30 @@ export const SVG_VIEWBOX = {
 };
 
 type PointCanvasProps = {
+  activePoints?: Point[];
   hullPoints?: Point[];
+  isInteractive?: boolean;
   onPointRemove?: (pointId: string) => void;
   points: Point[];
   onPointsChange: (points: Point[]) => void;
 };
 
 export function PointCanvas({
+  activePoints = [],
   hullPoints = [],
+  isInteractive = true,
   onPointRemove,
   points,
   onPointsChange,
 }: PointCanvasProps) {
   const hullPointIds = new Set(hullPoints.map((point) => point.id));
+  const activePointIds = new Set(activePoints.map((point) => point.id));
 
   function handleCanvasClick(event: MouseEvent<SVGSVGElement>) {
+    if (!isInteractive) {
+      return;
+    }
+
     const rect = event.currentTarget.getBoundingClientRect();
     const coordinate = clientPointToSvgPoint(
       { clientX: event.clientX, clientY: event.clientY },
@@ -44,7 +54,7 @@ export function PointCanvas({
     <div className="overflow-hidden rounded-md border bg-white">
       <svg
         aria-label="Convex hull point canvas"
-        className="block aspect-[16/10] w-full cursor-crosshair touch-none"
+        className={`block aspect-[16/10] w-full touch-none ${isInteractive ? "cursor-crosshair" : "cursor-default"}`}
         onClick={handleCanvasClick}
         role="img"
         viewBox={`0 0 ${SVG_VIEWBOX.width} ${SVG_VIEWBOX.height}`}
@@ -85,12 +95,24 @@ export function PointCanvas({
           />
         ) : null}
 
+        {activePoints.length >= 2 ? (
+          <polyline
+            fill="none"
+            points={toSvgPointsAttribute(activePoints)}
+            stroke="rgb(245 158 11)"
+            strokeDasharray="12 10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+        ) : null}
+
         {points.map((point, index) => (
           <g
-            className={onPointRemove ? "cursor-pointer" : undefined}
+            className={isInteractive && onPointRemove ? "cursor-pointer" : undefined}
             key={point.id}
             onClick={(event) => {
-              if (!onPointRemove) {
+              if (!isInteractive || !onPointRemove) {
                 return;
               }
 
@@ -98,14 +120,26 @@ export function PointCanvas({
               onPointRemove(point.id);
             }}
           >
-            <circle
-              cx={point.x}
-              cy={point.y}
-              fill={hullPointIds.has(point.id) ? "rgb(220 38 38)" : "rgb(37 99 235)"}
-              r={hullPointIds.has(point.id) ? "9" : "8"}
-              stroke="white"
-              strokeWidth="3"
-            />
+            {(() => {
+              const visualRole = getPointVisualRole(point.id, hullPointIds, activePointIds);
+
+              return (
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  fill={
+                    visualRole === "active"
+                      ? "rgb(245 158 11)"
+                      : visualRole === "hull"
+                        ? "rgb(220 38 38)"
+                        : "rgb(37 99 235)"
+                  }
+                  r={visualRole === "active" ? "11" : visualRole === "hull" ? "9" : "8"}
+                  stroke="white"
+                  strokeWidth="3"
+                />
+              );
+            })()}
             <text
               fill="rgb(75 85 99)"
               fontSize="18"

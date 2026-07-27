@@ -34,4 +34,21 @@ describe("file parser", () => {
     expect(result.duplicateRows).toEqual([3]);
     expect(result.rejectedRows).toEqual([2]);
   });
+
+  it("accepts points on the visible canvas boundary", () => {
+    const result = parseDatasetText("0,0\n1000,600");
+
+    expect(result.points).toEqual([
+      { id: "p-1", x: 0, y: 0 },
+      { id: "p-2", x: 1000, y: 600 },
+    ]);
+    expect(result.rejectedRows).toEqual([]);
+  });
+
+  it("rejects points outside the visible canvas", () => {
+    const result = parseDatasetText("-1,20\n1001,20\n20,-1\n20,601\n500,300");
+
+    expect(result.points).toEqual([{ id: "p-1", x: 500, y: 300 }]);
+    expect(result.rejectedRows).toEqual([1, 2, 3, 4]);
+  });
 });

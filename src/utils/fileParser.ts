@@ -12,6 +12,11 @@ type ParsedRow = {
   y: number;
 };
 
+const IMPORT_VIEWPORT = {
+  width: 1000,
+  height: 600,
+};
+
 export function parseDatasetText(text: string): ParseDatasetResult {
   const parsedRows: ParsedRow[] = [];
   const duplicateRows: number[] = [];
@@ -40,6 +45,11 @@ export function parseDatasetText(text: string): ParseDatasetResult {
     }
 
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      rejectedRows.push(index + 1);
+      return;
+    }
+
+    if (x < 0 || x > IMPORT_VIEWPORT.width || y < 0 || y > IMPORT_VIEWPORT.height) {
       rejectedRows.push(index + 1);
       return;
     }

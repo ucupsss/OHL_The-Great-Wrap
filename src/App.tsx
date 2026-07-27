@@ -1,5 +1,13 @@
-import { type ChangeEvent, useMemo, useRef, useState } from "react";
-import { Play, RotateCcw, Upload } from "lucide-react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MousePointer2,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,19 +42,66 @@ import { generateRandomPoints } from "@/utils/datasetGenerator";
 import { analyzeEdgeCases } from "@/utils/edgeCases";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
+import {
+  getStepFrame,
+  getStepProgress,
+  getVisualizerCanvasFrame,
+  type VisualizerMode,
+} from "@/utils/stepPlayback";
 
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [algorithm, setAlgorithm] = useState<ConvexHullAlgorithm>("graham");
+  const [isPlayingSteps, setIsPlayingSteps] = useState(false);
   const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
+  const [stepIndex, setStepIndex] = useState(0);
+  const [stepSpeed, setStepSpeed] = useState(50);
+  const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>("edit");
   const activeAlgorithmLabel = getAlgorithmLabel(algorithm);
   const edgeCaseStatus = useMemo(() => analyzeEdgeCases(points), [points]);
   const hullResult = useMemo(
     () => calculateConvexHull(points, algorithm),
     [algorithm, points],
   );
+  const maxStepIndex = Math.max(0, hullResult.steps.length - 1);
+  const playbackSpeed = Math.max(0.2, stepSpeed / 50);
+  const playbackIntervalMs = Math.round(1000 / playbackSpeed);
+  const stepFrame = useMemo(
+    () => getStepFrame(hullResult.steps, stepIndex, hullResult.hull),
+    [hullResult.hull, hullResult.steps, stepIndex],
+  );
+  const stepProgress = useMemo(
+    () => getStepProgress(hullResult.steps, stepIndex),
+    [hullResult.steps, stepIndex],
+  );
+  const canvasFrame = useMemo(
+    () => getVisualizerCanvasFrame(visualizerMode, hullResult.hull, stepFrame),
+    [hullResult.hull, stepFrame, visualizerMode],
+  );
+
+  useEffect(() => {
+    setStepIndex(0);
+    setIsPlayingSteps(false);
+  }, [algorithm, points]);
+
+  useEffect(() => {
+    if (!isPlayingSteps) {
+      return;
+    }
+
+    if (stepIndex >= maxStepIndex) {
+      setIsPlayingSteps(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setStepIndex((currentStepIndex) => Math.min(maxStepIndex, currentStepIndex + 1));
+    }, playbackIntervalMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isPlayingSteps, maxStepIndex, playbackIntervalMs, stepIndex]);
 
   function handleGeneratePoints() {
     const count = Number(pointCount);
@@ -75,7 +130,7 @@ function App() {
 
       const rejectedMessage =
         result.rejectedRows.length > 0
-          ? ` ${result.rejectedRows.length} invalid rows were skipped.`
+          ? ` ${result.rejectedRows.length} invalid or out-of-canvas rows were skipped.`
           : "";
       const duplicateMessage =
         result.duplicateRows.length > 0
@@ -105,6 +160,39 @@ function App() {
     });
   }
 
+  function handleSelectEditMode() {
+    setIsPlayingSteps(false);
+    setVisualizerMode("edit");
+  }
+
+  function handleSelectStepMode() {
+    setVisualizerMode("step");
+  }
+
+  function handlePreviousStep() {
+    setVisualizerMode("step");
+    setIsPlayingSteps(false);
+    setStepIndex((currentStepIndex) => Math.max(0, currentStepIndex - 1));
+  }
+
+  function handleNextStep() {
+    setVisualizerMode("step");
+    setIsPlayingSteps(false);
+    setStepIndex((currentStepIndex) => Math.min(maxStepIndex, currentStepIndex + 1));
+  }
+
+  function handleResetSteps() {
+    setVisualizerMode("step");
+    setIsPlayingSteps(false);
+    setStepIndex(0);
+  }
+
+  function handleTogglePlayback() {
+    setVisualizerMode("step");
+    setStepIndex((currentStepIndex) => (currentStepIndex >= maxStepIndex ? 0 : currentStepIndex));
+    setIsPlayingSteps((currentIsPlaying) => !currentIsPlaying);
+  }
+
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <div className="mx-auto grid min-h-dvh max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[320px_1fr]">
@@ -112,7 +200,7 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 7</Badge>
+              <Badge variant="secondary">Step Bonus</Badge>
             </div>
             <CardDescription>
               Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
@@ -153,6 +241,26 @@ function App() {
 
             <Separator />
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Canvas mode</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={handleSelectEditMode}
+                  variant={visualizerMode === "edit" ? "default" : "outline"}
+                >
+                  <MousePointer2 className="size-4" />
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleSelectStepMode}
+                  variant={visualizerMode === "step" ? "default" : "outline"}
+                >
+                  <Play className="size-4" />
+                  Step
+                </Button>
+              </div>
+            </div>
+
             <div className="rounded-md border bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">Edge case status</span>
@@ -187,12 +295,64 @@ function App() {
               />
             </div>
 
+            <Separator />
+
             <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{stepProgress.label}</span>
+                  <Badge variant="secondary">{stepFrame.step?.type ?? "idle"}</Badge>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width]"
+                    style={{ width: `${stepProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border bg-muted/30 p-3">
+                <p className="text-sm text-muted-foreground">
+                  {stepFrame.step?.description ?? "No recorded step for the current dataset."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                <Button
+                  aria-label="Previous step"
+                  disabled={stepIndex <= 0}
+                  onClick={handlePreviousStep}
+                  variant="outline"
+                >
+                  <SkipBack className="size-4" />
+                </Button>
+                <Button className="col-span-1" onClick={handleTogglePlayback}>
+                  {isPlayingSteps ? <Pause className="size-4" /> : <Play className="size-4" />}
+                </Button>
+                <Button
+                  aria-label="Next step"
+                  disabled={stepIndex >= maxStepIndex}
+                  onClick={handleNextStep}
+                  variant="outline"
+                >
+                  <SkipForward className="size-4" />
+                </Button>
+                <Button aria-label="Reset steps" onClick={handleResetSteps} variant="ghost">
+                  <RotateCcw className="size-4" />
+                </Button>
+              </div>
+
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">Step speed</span>
-                <span className="text-muted-foreground">1.0x</span>
+                <span className="text-muted-foreground">{playbackSpeed.toFixed(1)}x</span>
               </div>
-              <Slider defaultValue={[50]} max={100} step={1} />
+              <Slider
+                max={100}
+                min={10}
+                onValueChange={(value) => setStepSpeed(value[0] ?? 50)}
+                step={5}
+                value={[stepSpeed]}
+              />
             </div>
           </CardContent>
         </Card>
@@ -200,7 +360,6 @@ function App() {
         <Tabs defaultValue="visualizer" className="min-w-0">
           <TabsList>
             <TabsTrigger value="visualizer">Visualizer</TabsTrigger>
-            <TabsTrigger value="steps">Steps</TabsTrigger>
             <TabsTrigger value="benchmark">Benchmark</TabsTrigger>
           </TabsList>
           <TabsContent value="visualizer">
@@ -217,15 +376,20 @@ function App() {
                       {edgeCaseStatus.label}
                     </Badge>
                     <Badge>{activeAlgorithmLabel}</Badge>
+                    <Badge variant="outline">{visualizerMode === "edit" ? "Edit" : "Step"} mode</Badge>
                   </div>
                 </div>
                 <CardDescription>
-                  {datasetNotice} {activeAlgorithmLabel} is drawing the current hull automatically.
+                  {visualizerMode === "edit"
+                    ? `${datasetNotice} ${activeAlgorithmLabel} is drawing the current hull automatically.`
+                    : "Step mode is read-only. Orange marks the active check, red marks the current hull snapshot."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PointCanvas
-                  hullPoints={hullResult.hull}
+                  activePoints={canvasFrame.activePoints}
+                  hullPoints={canvasFrame.hullPoints}
+                  isInteractive={canvasFrame.isInteractive}
                   points={points}
                   onPointRemove={handleRemovePoint}
                   onPointsChange={(nextPoints) => {
@@ -234,17 +398,6 @@ function App() {
                   }}
                 />
               </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="steps">
-            <Card>
-              <CardHeader>
-                <CardTitle>Step Controls</CardTitle>
-                <CardDescription>
-                  {activeAlgorithmLabel} has recorded {hullResult.steps.length} algorithm steps for
-                  the current dataset.
-                </CardDescription>
-              </CardHeader>
             </Card>
           </TabsContent>
           <TabsContent value="benchmark">
