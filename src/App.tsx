@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { Play, RotateCcw, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +23,30 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import { PointCanvas, SVG_VIEWBOX } from "@/components/visualizer/PointCanvas";
+import { grahamScan } from "@/algorithms/grahamScan";
 import type { Point } from "@/types/point";
 import { generateRandomPoints } from "@/utils/datasetGenerator";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
 
+type Algorithm = "graham" | "jarvis";
+
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [algorithm, setAlgorithm] = useState<Algorithm>("graham");
   const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
+  const hullResult = useMemo(() => {
+    if (algorithm === "graham") {
+      return grahamScan(points);
+    }
+
+    return {
+      hull: [],
+      steps: [],
+    };
+  }, [algorithm, points]);
 
   function handleGeneratePoints() {
     const count = Number(pointCount);
@@ -92,7 +106,7 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 4</Badge>
+              <Badge variant="secondary">Milestone 5</Badge>
             </div>
             <CardDescription>
               Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
@@ -114,7 +128,7 @@ function App() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Algorithm</label>
-              <Select defaultValue="graham">
+              <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose algorithm" />
                 </SelectTrigger>
@@ -170,14 +184,20 @@ function App() {
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle>Convex Hull Canvas</CardTitle>
-                  <Badge variant="outline">{points.length} points</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">{points.length} points</Badge>
+                    <Badge variant="secondary">{hullResult.hull.length} hull points</Badge>
+                  </div>
                 </div>
                 <CardDescription>
-                  {datasetNotice}
+                  {algorithm === "graham"
+                    ? `${datasetNotice} Graham Scan is drawing the current hull.`
+                    : `${datasetNotice} Jarvis March will be connected in Milestone 6.`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PointCanvas
+                  hullPoints={hullResult.hull}
                   points={points}
                   onPointRemove={handleRemovePoint}
                   onPointsChange={(nextPoints) => {
@@ -193,7 +213,7 @@ function App() {
               <CardHeader>
                 <CardTitle>Step Controls</CardTitle>
                 <CardDescription>
-                  Playback controls will connect to algorithm snapshots later.
+                  Graham Scan has recorded {hullResult.steps.length} algorithm steps for the current dataset.
                 </CardDescription>
               </CardHeader>
             </Card>

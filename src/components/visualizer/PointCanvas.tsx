@@ -63,6 +63,18 @@ export function PointCanvas({
         <rect width={SVG_VIEWBOX.width} height={SVG_VIEWBOX.height} fill="rgb(249 250 251)" />
         <rect width={SVG_VIEWBOX.width} height={SVG_VIEWBOX.height} fill="url(#grid)" />
 
+        {hullPoints.length === 2 ? (
+          <line
+            stroke="rgb(37 99 235)"
+            strokeLinecap="round"
+            strokeWidth="4"
+            x1={hullPoints[0].x}
+            x2={hullPoints[1].x}
+            y1={hullPoints[0].y}
+            y2={hullPoints[1].y}
+          />
+        ) : null}
+
         {hullPoints.length >= 3 ? (
           <polygon
             fill="rgb(37 99 235 / 0.08)"
