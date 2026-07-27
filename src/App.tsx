@@ -23,28 +23,28 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import { PointCanvas, SVG_VIEWBOX } from "@/components/visualizer/PointCanvas";
-import { grahamScan } from "@/algorithms/grahamScan";
-import { jarvisMarch } from "@/algorithms/jarvisMarch";
+import {
+  ALGORITHM_OPTIONS,
+  calculateConvexHull,
+  type ConvexHullAlgorithm,
+  getAlgorithmLabel,
+} from "@/algorithms/convexHull";
 import type { Point } from "@/types/point";
 import { generateRandomPoints } from "@/utils/datasetGenerator";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
 
-type Algorithm = "graham" | "jarvis";
-
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [algorithm, setAlgorithm] = useState<Algorithm>("graham");
+  const [algorithm, setAlgorithm] = useState<ConvexHullAlgorithm>("graham");
   const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
-  const hullResult = useMemo(() => {
-    if (algorithm === "graham") {
-      return grahamScan(points);
-    }
-
-    return jarvisMarch(points);
-  }, [algorithm, points]);
+  const activeAlgorithmLabel = getAlgorithmLabel(algorithm);
+  const hullResult = useMemo(
+    () => calculateConvexHull(points, algorithm),
+    [algorithm, points],
+  );
 
   function handleGeneratePoints() {
     const count = Number(pointCount);
@@ -104,7 +104,7 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 6</Badge>
+              <Badge variant="secondary">Milestone 7</Badge>
             </div>
             <CardDescription>
               Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
@@ -126,13 +126,19 @@ function App() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Algorithm</label>
-              <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as Algorithm)}>
+              <Select
+                value={algorithm}
+                onValueChange={(value) => setAlgorithm(value as ConvexHullAlgorithm)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose algorithm" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="graham">Graham Scan</SelectItem>
-                  <SelectItem value="jarvis">Jarvis March</SelectItem>
+                  {ALGORITHM_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -185,13 +191,9 @@ function App() {
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">{points.length} points</Badge>
                     <Badge variant="secondary">{hullResult.hull.length} hull points</Badge>
+                    <Badge>{activeAlgorithmLabel}</Badge>
                   </div>
                 </div>
-                <CardDescription>
-                  {algorithm === "graham"
-                    ? `${datasetNotice} Graham Scan is drawing the current hull.`
-                    : `${datasetNotice} Jarvis March is drawing the current hull.`}
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <PointCanvas
@@ -211,8 +213,8 @@ function App() {
               <CardHeader>
                 <CardTitle>Step Controls</CardTitle>
                 <CardDescription>
-                  {algorithm === "graham" ? "Graham Scan" : "Jarvis March"} has recorded{" "}
-                  {hullResult.steps.length} algorithm steps for the current dataset.
+                  {activeAlgorithmLabel} has recorded {hullResult.steps.length} algorithm steps for
+                  the current dataset.
                 </CardDescription>
               </CardHeader>
             </Card>
