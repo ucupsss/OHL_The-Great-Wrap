@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import { PointCanvas, SVG_VIEWBOX } from "@/components/visualizer/PointCanvas";
 import { grahamScan } from "@/algorithms/grahamScan";
+import { jarvisMarch } from "@/algorithms/jarvisMarch";
 import type { Point } from "@/types/point";
 import { generateRandomPoints } from "@/utils/datasetGenerator";
 import { parseDatasetText } from "@/utils/fileParser";
@@ -42,10 +43,7 @@ function App() {
       return grahamScan(points);
     }
 
-    return {
-      hull: [],
-      steps: [],
-    };
+    return jarvisMarch(points);
   }, [algorithm, points]);
 
   function handleGeneratePoints() {
@@ -106,7 +104,7 @@ function App() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Milestone 5</Badge>
+              <Badge variant="secondary">Milestone 6</Badge>
             </div>
             <CardDescription>
               Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
@@ -192,7 +190,7 @@ function App() {
                 <CardDescription>
                   {algorithm === "graham"
                     ? `${datasetNotice} Graham Scan is drawing the current hull.`
-                    : `${datasetNotice} Jarvis March will be connected in Milestone 6.`}
+                    : `${datasetNotice} Jarvis March is drawing the current hull.`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -213,7 +211,8 @@ function App() {
               <CardHeader>
                 <CardTitle>Step Controls</CardTitle>
                 <CardDescription>
-                  Graham Scan has recorded {hullResult.steps.length} algorithm steps for the current dataset.
+                  {algorithm === "graham" ? "Graham Scan" : "Jarvis March"} has recorded{" "}
+                  {hullResult.steps.length} algorithm steps for the current dataset.
                 </CardDescription>
               </CardHeader>
             </Card>
