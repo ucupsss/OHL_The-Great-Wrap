@@ -19,10 +19,11 @@ const samplePoints: Point[] = [
 ];
 
 describe("convex hull algorithm controller", () => {
-  it("exposes the two required algorithm choices in UI order", () => {
+  it("exposes the required and bonus algorithm choices in UI order", () => {
     expect(ALGORITHM_OPTIONS).toEqual([
       { value: "graham", label: "Graham Scan" },
       { value: "jarvis", label: "Jarvis March" },
+      { value: "quickhull", label: "QuickHull" },
     ]);
   });
 
@@ -40,8 +41,16 @@ describe("convex hull algorithm controller", () => {
     expect(result.steps.map((step) => step.type)).toContain("candidate");
   });
 
+  it("calculates the hull using QuickHull when selected", () => {
+    const result = calculateConvexHull(samplePoints, "quickhull");
+
+    expect(ids(result.hull)).toEqual(["a", "b", "c", "d"]);
+    expect(result.steps.map((step) => step.type)).toContain("candidate");
+  });
+
   it("returns a readable algorithm label", () => {
     expect(getAlgorithmLabel("graham")).toBe("Graham Scan");
     expect(getAlgorithmLabel("jarvis")).toBe("Jarvis March");
+    expect(getAlgorithmLabel("quickhull")).toBe("QuickHull");
   });
 });
