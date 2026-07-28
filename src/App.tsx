@@ -1,5 +1,6 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BarChart3,
   MousePointer2,
   Pause,
   Play,
@@ -43,6 +44,7 @@ import {
   type DatasetPattern,
   generateDatasetPoints,
 } from "@/utils/datasetGenerator";
+import { type BenchmarkResult, runBenchmarkSuite } from "@/utils/benchmark";
 import { analyzeEdgeCases } from "@/utils/edgeCases";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
@@ -61,6 +63,10 @@ function App() {
   const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
+  const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
+  const [benchmarkNotice, setBenchmarkNotice] = useState(
+    "Run a benchmark to compare all available algorithms.",
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [stepSpeed, setStepSpeed] = useState(50);
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>("edit");
@@ -122,6 +128,25 @@ function App() {
     setPoints(generatedPoints);
     setDatasetNotice(`Generated ${generatedPoints.length} ${patternLabel.toLowerCase()} points.`);
     toast.success(`Generated ${generatedPoints.length} ${patternLabel.toLowerCase()} points`);
+  }
+
+  function handleRunBenchmark() {
+    const count = Number(pointCount);
+    const benchmarkPoints = generateDatasetPoints({
+      count: Number.isFinite(count) ? count : 0,
+      pattern: datasetPattern,
+      viewport: SVG_VIEWBOX,
+    });
+    const patternLabel =
+      DATASET_PATTERN_OPTIONS.find((option) => option.value === datasetPattern)?.label ??
+      "dataset";
+    const results = runBenchmarkSuite({ points: benchmarkPoints });
+
+    setBenchmarkResults(results);
+    setBenchmarkNotice(
+      `Benchmarked ${benchmarkPoints.length} ${patternLabel.toLowerCase()} points.`,
+    );
+    toast.success("Benchmark completed");
   }
 
   async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
@@ -431,11 +456,67 @@ function App() {
           <TabsContent value="benchmark">
             <Card>
               <CardHeader>
-                <CardTitle>Benchmark</CardTitle>
-                <CardDescription>
-                  Runtime comparison table will be added after algorithms exist.
-                </CardDescription>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>Benchmark</CardTitle>
+                    <CardDescription>
+                      Compare Graham Scan, Jarvis March, and QuickHull with the selected dataset
+                      pattern.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleRunBenchmark}>
+                    <BarChart3 className="size-4" />
+                    Run Benchmark
+                  </Button>
+                </div>
               </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">{pointCount || "0"} points</Badge>
+                  <Badge variant="secondary">
+                    {DATASET_PATTERN_OPTIONS.find((option) => option.value === datasetPattern)
+                      ?.label ?? "Dataset"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{benchmarkNotice}</p>
+
+                <div className="overflow-hidden rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/60 text-left">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Algorithm</th>
+                        <th className="px-3 py-2 text-right font-medium">Runtime</th>
+                        <th className="px-3 py-2 text-right font-medium">Hull Points</th>
+                        <th className="px-3 py-2 text-right font-medium">Steps</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {benchmarkResults.length > 0 ? (
+                        benchmarkResults.map((result) => (
+                          <tr key={result.algorithm}>
+                            <td className="px-3 py-2 font-medium">{result.label}</td>
+                            <td className="px-3 py-2 text-right">
+                              {result.durationMs.toFixed(3)} ms
+                            </td>
+                            <td className="px-3 py-2 text-right">{result.hullPointCount}</td>
+                            <td className="px-3 py-2 text-right">{result.stepCount}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
+                            No benchmark results yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <CardDescription>
+                  Runtime depends on the browser and current machine load, so compare relative
+                  results from the same run.
+                </CardDescription>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
