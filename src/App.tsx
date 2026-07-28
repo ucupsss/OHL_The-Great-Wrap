@@ -38,7 +38,11 @@ import {
   getAlgorithmLabel,
 } from "@/algorithms/convexHull";
 import type { Point } from "@/types/point";
-import { generateRandomPoints } from "@/utils/datasetGenerator";
+import {
+  DATASET_PATTERN_OPTIONS,
+  type DatasetPattern,
+  generateDatasetPoints,
+} from "@/utils/datasetGenerator";
 import { analyzeEdgeCases } from "@/utils/edgeCases";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
@@ -53,6 +57,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [algorithm, setAlgorithm] = useState<ConvexHullAlgorithm>("graham");
   const [isPlayingSteps, setIsPlayingSteps] = useState(false);
+  const [datasetPattern, setDatasetPattern] = useState<DatasetPattern>("uniform");
   const [pointCount, setPointCount] = useState("30");
   const [points, setPoints] = useState<Point[]>([]);
   const [datasetNotice, setDatasetNotice] = useState("Click the SVG workspace to add points.");
@@ -105,14 +110,18 @@ function App() {
 
   function handleGeneratePoints() {
     const count = Number(pointCount);
-    const generatedPoints = generateRandomPoints({
+    const generatedPoints = generateDatasetPoints({
       count: Number.isFinite(count) ? count : 0,
+      pattern: datasetPattern,
       viewport: SVG_VIEWBOX,
     });
+    const patternLabel =
+      DATASET_PATTERN_OPTIONS.find((option) => option.value === datasetPattern)?.label ??
+      "dataset";
 
     setPoints(generatedPoints);
-    setDatasetNotice(`Generated ${generatedPoints.length} random points.`);
-    toast.success(`Generated ${generatedPoints.length} points`);
+    setDatasetNotice(`Generated ${generatedPoints.length} ${patternLabel.toLowerCase()} points.`);
+    toast.success(`Generated ${generatedPoints.length} ${patternLabel.toLowerCase()} points`);
   }
 
   async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
@@ -218,6 +227,25 @@ function App() {
                 type="number"
                 value={pointCount}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Pattern</label>
+              <Select
+                value={datasetPattern}
+                onValueChange={(value) => setDatasetPattern(value as DatasetPattern)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose pattern" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATASET_PATTERN_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
