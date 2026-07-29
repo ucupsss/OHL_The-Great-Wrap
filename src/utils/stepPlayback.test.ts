@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { HullStep } from "@/types/hull";
 import type { Point } from "@/types/point";
-import { getStepFrame, getStepProgress, getVisualizerCanvasFrame } from "./stepPlayback";
+import {
+  getPlaybackTiming,
+  getStepFrame,
+  getStepProgress,
+  getVisualizerCanvasFrame,
+} from "./stepPlayback";
 
 const points: Point[] = [
   { id: "p-1", x: 0, y: 0 },
@@ -72,6 +77,21 @@ describe("step playback", () => {
       activePoints: [points[1]],
       hullPoints: [points[0], points[1]],
       isInteractive: false,
+    });
+  });
+
+  it("maps the speed slider to playback speed up to 8x", () => {
+    expect(getPlaybackTiming(50)).toEqual({
+      intervalMs: 1000,
+      speed: 1,
+    });
+    expect(getPlaybackTiming(400)).toEqual({
+      intervalMs: 125,
+      speed: 8,
+    });
+    expect(getPlaybackTiming(0)).toEqual({
+      intervalMs: 5000,
+      speed: 0.2,
     });
   });
 });

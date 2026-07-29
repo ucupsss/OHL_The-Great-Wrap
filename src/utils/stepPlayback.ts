@@ -21,6 +21,11 @@ export type StepProgress = {
   percent: number;
 };
 
+export type PlaybackTiming = {
+  intervalMs: number;
+  speed: number;
+};
+
 function clampStepIndex(stepCount: number, requestedIndex: number): number {
   if (stepCount === 0) {
     return 0;
@@ -67,6 +72,15 @@ export function getStepProgress(steps: HullStep[], requestedIndex: number): Step
   return {
     label: `Step ${stepIndex + 1} of ${steps.length}`,
     percent: ((stepIndex + 1) / steps.length) * 100,
+  };
+}
+
+export function getPlaybackTiming(sliderValue: number): PlaybackTiming {
+  const speed = Math.max(0.2, sliderValue / 50);
+
+  return {
+    intervalMs: Math.round(1000 / speed),
+    speed,
   };
 }
 

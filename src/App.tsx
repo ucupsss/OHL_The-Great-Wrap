@@ -49,6 +49,7 @@ import { analyzeEdgeCases } from "@/utils/edgeCases";
 import { parseDatasetText } from "@/utils/fileParser";
 import { removePointById } from "@/utils/pointList";
 import {
+  getPlaybackTiming,
   getStepFrame,
   getStepProgress,
   getVisualizerCanvasFrame,
@@ -77,8 +78,7 @@ function App() {
     [algorithm, points],
   );
   const maxStepIndex = Math.max(0, hullResult.steps.length - 1);
-  const playbackSpeed = Math.max(0.2, stepSpeed / 50);
-  const playbackIntervalMs = Math.round(1000 / playbackSpeed);
+  const playbackTiming = getPlaybackTiming(stepSpeed);
   const stepFrame = useMemo(
     () => getStepFrame(hullResult.steps, stepIndex, hullResult.hull),
     [hullResult.hull, hullResult.steps, stepIndex],
@@ -109,10 +109,10 @@ function App() {
 
     const timeoutId = window.setTimeout(() => {
       setStepIndex((currentStepIndex) => Math.min(maxStepIndex, currentStepIndex + 1));
-    }, playbackIntervalMs);
+    }, playbackTiming.intervalMs);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isPlayingSteps, maxStepIndex, playbackIntervalMs, stepIndex]);
+  }, [isPlayingSteps, maxStepIndex, playbackTiming.intervalMs, stepIndex]);
 
   function handleGeneratePoints() {
     const count = Number(pointCount);
@@ -232,10 +232,7 @@ function App() {
       <div className="mx-auto grid min-h-dvh max-w-7xl grid-cols-1 gap-4 p-4 lg:grid-cols-[320px_1fr]">
         <Card className="h-fit">
           <CardHeader>
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle>The Great Wrap</CardTitle>
-              <Badge variant="secondary">Step Bonus</Badge>
-            </div>
+            <CardTitle>The Great Wrap</CardTitle>
             <CardDescription>
               Tambahkan titik secara manual, dengan generator, atau dengan import file .csv / .txt
             </CardDescription>
@@ -397,13 +394,13 @@ function App() {
 
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">Step speed</span>
-                <span className="text-muted-foreground">{playbackSpeed.toFixed(1)}x</span>
+                <span className="text-muted-foreground">{playbackTiming.speed.toFixed(1)}x</span>
               </div>
               <Slider
-                max={100}
+                max={400}
                 min={10}
                 onValueChange={(value) => setStepSpeed(value[0] ?? 50)}
-                step={5}
+                step={10}
                 value={[stepSpeed]}
               />
             </div>
