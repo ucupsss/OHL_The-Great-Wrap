@@ -363,5 +363,7 @@ testcase/
 
 - Jarvis March : [Convex Hull using Jarvis' Algorithm or Wrapping](https://www.geeksforgeeks.org/dsa/convex-hull-using-jarvis-algorithm-or-wrapping/)
 
+- Quickhull : [Quickhull Algorithm for Convex Hull](https://www.geeksforgeeks.org/dsa/convex-hull-using-jarvis-algorithm-or-wrapping/)
+
 
 ## Link Video Demo
