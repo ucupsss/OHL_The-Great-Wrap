@@ -20,11 +20,13 @@ function createStep(
   description: string,
   activePoints: Point[],
   hullSnapshot: Point[],
+  candidatePoints?: Point[],
 ): HullStep {
   return {
     type,
     description,
     activePoints,
+    candidatePoints,
     hullSnapshot,
   };
 }
@@ -80,6 +82,7 @@ function buildHullSegment(
       `Searching ${candidates.length} candidate point${candidates.length === 1 ? "" : "s"} outside segment ${a.id} to ${b.id}.`,
       [a, b],
       [a, b],
+      candidates,
     ),
   );
 

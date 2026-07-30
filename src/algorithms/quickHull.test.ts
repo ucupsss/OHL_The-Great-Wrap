@@ -106,4 +106,19 @@ describe("quickHull", () => {
       expect.arrayContaining(["split", "search", "recurse", "confirm"]),
     );
   });
+
+  it("records the candidate set for each QuickHull segment search", () => {
+    const result = quickHull([
+      { id: "left", x: 0, y: 5 },
+      { id: "top", x: 4, y: 0 },
+      { id: "inside-top", x: 5, y: 3 },
+      { id: "right", x: 10, y: 5 },
+      { id: "bottom", x: 6, y: 12 },
+      { id: "inside-bottom", x: 5, y: 8 },
+    ]);
+    const searchStep = result.steps.find((step) => step.type === "search");
+
+    expect(searchStep).toBeDefined();
+    expect(ids(searchStep?.candidatePoints ?? [])).toEqual(["bottom", "inside-bottom"]);
+  });
 });

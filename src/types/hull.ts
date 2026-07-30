@@ -19,6 +19,7 @@ export type HullStep = {
   type: HullStepType;
   description: string;
   activePoints: Point[];
+  candidatePoints?: Point[];
   hullSnapshot: Point[];
 };
 
