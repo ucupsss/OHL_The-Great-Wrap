@@ -111,10 +111,6 @@ Warna visualisasi step:
 - merah: titik hull sementara,
 - biru: titik biasa.
 
-Catatan: Graham Scan dan Jarvis March memiliki step yang lebih detail.
-QuickHull sudah memiliki step minimal sebagai fallback, tetapi visualisasi
-rekursi QuickHull belum dibuat sedetail dua algoritma lainnya.
-
 ### Dataset Generator
 
 Dataset dapat dibuat otomatis dengan beberapa pola:
