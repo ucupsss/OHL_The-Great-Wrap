@@ -62,8 +62,26 @@ function buildHullSegment(
   steps: HullStep[],
 ): Point[] {
   if (candidates.length === 0) {
+    steps.push(
+      createStep(
+        "confirm",
+        `Confirmed segment ${a.id} to ${b.id} because no outside candidates remain.`,
+        [a, b],
+        [a, b],
+      ),
+    );
+
     return [];
   }
+
+  steps.push(
+    createStep(
+      "search",
+      `Searching ${candidates.length} candidate point${candidates.length === 1 ? "" : "s"} outside segment ${a.id} to ${b.id}.`,
+      [a, b],
+      [a, b],
+    ),
+  );
 
   const farthestPoint = findFarthestPoint(a, b, candidates);
   const remainingCandidates = candidates.filter((point) => point.id !== farthestPoint.id);
@@ -74,6 +92,15 @@ function buildHullSegment(
       `Selected ${farthestPoint.id} as the farthest point from ${a.id} to ${b.id}.`,
       [a, b, farthestPoint],
       [a, b],
+    ),
+  );
+
+  steps.push(
+    createStep(
+      "recurse",
+      `Split segment ${a.id} to ${b.id} into ${a.id} to ${farthestPoint.id} and ${farthestPoint.id} to ${b.id}.`,
+      [a, farthestPoint, b],
+      [a, farthestPoint, b],
     ),
   );
 
@@ -180,16 +207,28 @@ export function quickHull(points: Point[]): ConvexHullResult {
     ),
   );
 
+  const upperCandidates = pointsLeftOfLine(leftmostPoint, rightmostPoint, remainingPoints);
+  const lowerCandidates = pointsLeftOfLine(rightmostPoint, leftmostPoint, remainingPoints);
+
+  steps.push(
+    createStep(
+      "split",
+      `Split remaining points into ${upperCandidates.length} upper and ${lowerCandidates.length} lower baseline candidate${remainingPoints.length === 1 ? "" : "s"}.`,
+      [leftmostPoint, rightmostPoint],
+      [leftmostPoint, rightmostPoint],
+    ),
+  );
+
   const upperHull = buildHullSegment(
     leftmostPoint,
     rightmostPoint,
-    pointsLeftOfLine(leftmostPoint, rightmostPoint, remainingPoints),
+    upperCandidates,
     steps,
   );
   const lowerHull = buildHullSegment(
     rightmostPoint,
     leftmostPoint,
-    pointsLeftOfLine(rightmostPoint, leftmostPoint, remainingPoints),
+    lowerCandidates,
     steps,
   );
   const hull = orderHullPoints([
