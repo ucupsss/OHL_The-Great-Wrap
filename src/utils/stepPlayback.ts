@@ -3,6 +3,7 @@ import type { Point } from "@/types/point";
 
 export type StepFrame = {
   activePoints: Point[];
+  candidatePoints: Point[];
   hullPoints: Point[];
   step: HullStep | undefined;
   stepIndex: number;
@@ -12,6 +13,7 @@ export type VisualizerMode = "edit" | "step";
 
 export type VisualizerCanvasFrame = {
   activePoints: Point[];
+  candidatePoints: Point[];
   hullPoints: Point[];
   isInteractive: boolean;
 };
@@ -34,22 +36,6 @@ function clampStepIndex(stepCount: number, requestedIndex: number): number {
   return Math.min(Math.max(0, requestedIndex), stepCount - 1);
 }
 
-function mergePointSets(primaryPoints: Point[], secondaryPoints: Point[] = []): Point[] {
-  const seenPointIds = new Set<string>();
-  const mergedPoints: Point[] = [];
-
-  for (const point of [...primaryPoints, ...secondaryPoints]) {
-    if (seenPointIds.has(point.id)) {
-      continue;
-    }
-
-    seenPointIds.add(point.id);
-    mergedPoints.push(point);
-  }
-
-  return mergedPoints;
-}
-
 export function getStepFrame(
   steps: HullStep[],
   requestedIndex: number,
@@ -61,6 +47,7 @@ export function getStepFrame(
   if (!step) {
     return {
       activePoints: [],
+      candidatePoints: [],
       hullPoints: finalHull,
       step: undefined,
       stepIndex,
@@ -68,7 +55,8 @@ export function getStepFrame(
   }
 
   return {
-    activePoints: mergePointSets(step.activePoints, step.candidatePoints),
+    activePoints: step.activePoints,
+    candidatePoints: step.candidatePoints ?? [],
     hullPoints: step.hullSnapshot,
     step,
     stepIndex,
@@ -108,6 +96,7 @@ export function getVisualizerCanvasFrame(
   if (mode === "step") {
     return {
       activePoints: stepFrame.activePoints,
+      candidatePoints: stepFrame.candidatePoints,
       hullPoints: stepFrame.hullPoints,
       isInteractive: false,
     };
@@ -115,6 +104,7 @@ export function getVisualizerCanvasFrame(
 
   return {
     activePoints: [],
+    candidatePoints: [],
     hullPoints: finalHull,
     isInteractive: true,
   };

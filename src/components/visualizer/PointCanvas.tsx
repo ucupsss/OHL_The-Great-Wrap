@@ -11,6 +11,7 @@ export const SVG_VIEWBOX = {
 
 type PointCanvasProps = {
   activePoints?: Point[];
+  candidatePoints?: Point[];
   hullPoints?: Point[];
   isInteractive?: boolean;
   onPointRemove?: (pointId: string) => void;
@@ -20,6 +21,7 @@ type PointCanvasProps = {
 
 export function PointCanvas({
   activePoints = [],
+  candidatePoints = [],
   hullPoints = [],
   isInteractive = true,
   onPointRemove,
@@ -28,6 +30,7 @@ export function PointCanvas({
 }: PointCanvasProps) {
   const hullPointIds = new Set(hullPoints.map((point) => point.id));
   const activePointIds = new Set(activePoints.map((point) => point.id));
+  const candidatePointIds = new Set(candidatePoints.map((point) => point.id));
 
   function handleCanvasClick(event: MouseEvent<SVGSVGElement>) {
     if (!isInteractive) {
@@ -121,7 +124,12 @@ export function PointCanvas({
             }}
           >
             {(() => {
-              const visualRole = getPointVisualRole(point.id, hullPointIds, activePointIds);
+              const visualRole = getPointVisualRole(
+                point.id,
+                hullPointIds,
+                activePointIds,
+                candidatePointIds,
+              );
 
               return (
                 <circle
@@ -130,11 +138,21 @@ export function PointCanvas({
                   fill={
                     visualRole === "active"
                       ? "rgb(245 158 11)"
+                      : visualRole === "candidate"
+                        ? "rgb(234 179 8)"
                       : visualRole === "hull"
                         ? "rgb(220 38 38)"
                         : "rgb(37 99 235)"
                   }
-                  r={visualRole === "active" ? "11" : visualRole === "hull" ? "9" : "8"}
+                  r={
+                    visualRole === "active"
+                      ? "11"
+                      : visualRole === "candidate"
+                        ? "10"
+                        : visualRole === "hull"
+                          ? "9"
+                          : "8"
+                  }
                   stroke="white"
                   strokeWidth="3"
                 />

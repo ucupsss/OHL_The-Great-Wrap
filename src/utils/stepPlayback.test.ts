@@ -52,6 +52,7 @@ describe("step playback", () => {
   it("falls back to the final hull when no recorded steps exist", () => {
     expect(getStepFrame([], 4, points)).toEqual({
       activePoints: [],
+      candidatePoints: [],
       hullPoints: points,
       step: undefined,
       stepIndex: 0,
@@ -65,7 +66,7 @@ describe("step playback", () => {
     });
   });
 
-  it("includes candidate points in the active step frame for visualization", () => {
+  it("keeps candidate points separate from active segment points for visualization", () => {
     const candidateStep: HullStep = {
       type: "search",
       description: "Search candidates.",
@@ -73,12 +74,10 @@ describe("step playback", () => {
       candidatePoints: [points[1], points[2]],
       hullSnapshot: [points[0], points[1]],
     };
+    const stepFrame = getStepFrame([candidateStep], 0, points);
 
-    expect(getStepFrame([candidateStep], 0, points).activePoints).toEqual([
-      points[0],
-      points[1],
-      points[2],
-    ]);
+    expect(stepFrame.activePoints).toEqual([points[0], points[1]]);
+    expect(stepFrame.candidatePoints).toEqual([points[1], points[2]]);
   });
 
   it("uses the final hull in edit mode and the step snapshot in step mode", () => {
@@ -86,11 +85,13 @@ describe("step playback", () => {
 
     expect(getVisualizerCanvasFrame("edit", points, stepFrame)).toEqual({
       activePoints: [],
+      candidatePoints: [],
       hullPoints: points,
       isInteractive: true,
     });
     expect(getVisualizerCanvasFrame("step", points, stepFrame)).toEqual({
       activePoints: [points[1]],
+      candidatePoints: [],
       hullPoints: [points[0], points[1]],
       isInteractive: false,
     });

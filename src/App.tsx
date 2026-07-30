@@ -438,6 +438,7 @@ function App() {
               <CardContent>
                 <PointCanvas
                   activePoints={canvasFrame.activePoints}
+                  candidatePoints={canvasFrame.candidatePoints}
                   hullPoints={canvasFrame.hullPoints}
                   isInteractive={canvasFrame.isInteractive}
                   points={points}
