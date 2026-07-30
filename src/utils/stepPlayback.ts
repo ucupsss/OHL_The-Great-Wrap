@@ -34,6 +34,22 @@ function clampStepIndex(stepCount: number, requestedIndex: number): number {
   return Math.min(Math.max(0, requestedIndex), stepCount - 1);
 }
 
+function mergePointSets(primaryPoints: Point[], secondaryPoints: Point[] = []): Point[] {
+  const seenPointIds = new Set<string>();
+  const mergedPoints: Point[] = [];
+
+  for (const point of [...primaryPoints, ...secondaryPoints]) {
+    if (seenPointIds.has(point.id)) {
+      continue;
+    }
+
+    seenPointIds.add(point.id);
+    mergedPoints.push(point);
+  }
+
+  return mergedPoints;
+}
+
 export function getStepFrame(
   steps: HullStep[],
   requestedIndex: number,
@@ -52,7 +68,7 @@ export function getStepFrame(
   }
 
   return {
-    activePoints: step.activePoints,
+    activePoints: mergePointSets(step.activePoints, step.candidatePoints),
     hullPoints: step.hullSnapshot,
     step,
     stepIndex,

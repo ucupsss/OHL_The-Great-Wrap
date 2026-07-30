@@ -65,6 +65,22 @@ describe("step playback", () => {
     });
   });
 
+  it("includes candidate points in the active step frame for visualization", () => {
+    const candidateStep: HullStep = {
+      type: "search",
+      description: "Search candidates.",
+      activePoints: [points[0], points[1]],
+      candidatePoints: [points[1], points[2]],
+      hullSnapshot: [points[0], points[1]],
+    };
+
+    expect(getStepFrame([candidateStep], 0, points).activePoints).toEqual([
+      points[0],
+      points[1],
+      points[2],
+    ]);
+  });
+
   it("uses the final hull in edit mode and the step snapshot in step mode", () => {
     const stepFrame = getStepFrame(steps, 1, points);
 
