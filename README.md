@@ -228,7 +228,8 @@ Implementasi utama:
 
 
 ## Screenshot Hasil Program
-![Deskripsi gambar](image/image-1.png)
+![Halaman Utama](image/image-1.png)
+![Benchmark](image/image-2.png)
 
 
 ## Cara Menjalankan
