@@ -228,6 +228,7 @@ Implementasi utama:
 
 
 ## Screenshot Hasil Program
+![Deskripsi gambar](image/image-1.png)
 
 
 ## Cara Menjalankan
@@ -367,3 +368,4 @@ testcase/
 
 
 ## Link Video Demo
+[Link Video Demo](https://drive.google.com/drive/folders/1dSXcAJ_P8qEvjOPFO_rH857qia6qwVg4?usp=sharing)
